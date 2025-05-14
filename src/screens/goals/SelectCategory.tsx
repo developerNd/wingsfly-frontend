@@ -15,6 +15,8 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
+import { Shadow } from 'react-native-shadow-2';
+import Layout from '../../components/Layout';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2; // 16px padding on each side, 16px gap
@@ -144,12 +146,19 @@ const SelectCategory = () => {
   }
 
   const CategoryCard: React.FC<CategoryCardProps> = ({ 
-    title, 
-    image, 
-    onPress, 
-    isCreateNew,
-    isSelected 
-  }) => (
+      title, 
+      image, 
+      onPress, 
+      isCreateNew,
+      isSelected 
+    }) => (
+    <Shadow distance={2} 
+              startColor="rgba(0,0,0,0.1)"
+              endColor="rgba(0,0,0,0)" 
+              offset={[0, 0.25]} 
+    >
+
+   
     <TouchableOpacity 
       style={[
         styles.categoryCard,
@@ -161,6 +170,7 @@ const SelectCategory = () => {
       <Image source={image} style={styles.categoryImage} resizeMode="cover" />
       <Text style={styles.categoryTitle}>{title}</Text>
     </TouchableOpacity>
+    </Shadow>
   );
 
   const handleCategorySelection = (category: Category) => {
@@ -255,57 +265,35 @@ const SelectCategory = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar 
-        barStyle="dark-content" 
-        backgroundColor="#fff"
-      />
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-              <Icon name="arrow-back" size={24} color="black" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Select Goal Category</Text>
-            <TouchableOpacity 
-              style={[
-                styles.nextButton,
-                !selectedCategory && styles.nextButtonDisabled
-              ]}
-              disabled={!selectedCategory}
-              onPress={handleNext}
-            >
-              <Text style={[
-                styles.nextButtonText,
-                !selectedCategory && styles.nextButtonTextDisabled
-              ]}>Next</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView 
-            style={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.gridContainer}
-          >
-            {categories.slice(0, -1).map((category) => (
-              <CategoryCard
-                key={category.id}
-                title={category.title}
-                image={category.image}
-                onPress={() => handleCategorySelection(category)}
-                isSelected={selectedCategory?.id === category.id}
-              />
-            ))}
-            <CategoryCard
-              title="Create a Category"
-              image={categories[categories.length - 1].image}
-              onPress={() => {/* Handle create category */}}
-              isCreateNew={true}
-            />
-          </ScrollView>
-        </View>
-      </SafeAreaView>
-    </View>
+    <Layout
+      title="Select Category"
+      onBackPress={() => navigation.goBack()}
+      rightButtonText="Next"
+      rightButtonDisabled={!selectedCategory}
+      onRightButtonPress={handleNext}
+    >
+      <ScrollView 
+        style={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.gridContainer}
+      >
+        {categories.slice(0, -1).map((category) => (
+          <CategoryCard
+            key={category.id}
+            title={category.title}
+            image={category.image}
+            onPress={() => handleCategorySelection(category)}
+            isSelected={selectedCategory?.id === category.id}
+          />
+        ))}
+        <CategoryCard
+          title="Create a Category"
+          image={categories[categories.length - 1].image}
+          onPress={() => {/* Handle create category */}}
+          isCreateNew={true}
+        />
+      </ScrollView>
+    </Layout>
   );
 };
 
@@ -326,8 +314,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    height: 56,
+    // height: 56,
+    paddingVertical: 12,
     paddingTop: Platform.OS === 'android' ? 8 : 0,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+    backgroundColor: '#fff',
   },
   headerTitle: {
     fontSize: 20,
@@ -338,32 +330,28 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   gridContainer: {
-    padding: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    gap: 1,
   },
   categoryCard: {
     width: (Dimensions.get('window').width - 48) / 2,
     height: (Dimensions.get('window').width - 48) / 2,
     aspectRatio: 1,
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 8,
     marginBottom: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    overflow: 'hidden',
   },
   createNewCard: {
-    borderWidth: 1,
-    borderColor: '#007AFF',
-    borderStyle: 'dashed',
+    // borderWidth: 1,
+    // borderColor: '#007AFF',
+    // borderStyle: 'dashed',
     backgroundColor: '#fff',
   },
   categoryImage: {

@@ -1,6 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApiUrl } from '../config/api';
+import { clearAuthData, getAuthToken, storeAuthToken, storeUserData } from './authStorage';
 
 // Create axios instance with base configuration
 const api = axios.create({
@@ -31,7 +32,7 @@ api.interceptors.request.use(
       baseURL: config.baseURL,
     });
     
-    const token = await AsyncStorage.getItem('token');
+    const token = await getAuthToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -75,12 +76,12 @@ export const login = async (email: string, password: string) => {
     
     // Check if we have a token in the response
     if (response.data && response.data.access_token) {
-      await AsyncStorage.setItem('token', response.data.access_token);
+      await storeAuthToken(response.data.access_token);
       console.log('✅ Token stored successfully');
       
       // Store user data including gender
       if (response.data.user) {
-        await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
+        await storeUserData(response.data.user);
         console.log('✅ User data stored successfully');
       }
     } else {
@@ -113,12 +114,12 @@ export const register = async (name: string, email: string, password: string, ge
     
     // Check if we have a token in the response
     if (response.data && response.data.access_token) {
-      await AsyncStorage.setItem('token', response.data.access_token);
+      await storeAuthToken(response.data.access_token);
       console.log('✅ Token stored successfully');
       
       // Store user data including gender
       if (response.data.user) {
-        await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
+        await storeUserData(response.data.user);
         console.log('✅ User data stored successfully');
       }
     } else {
@@ -138,13 +139,14 @@ export const register = async (name: string, email: string, password: string, ge
 };
 
 export const logout = async () => {
-  console.log('📝 Logout attempt');
   try {
-    await AsyncStorage.removeItem('token');
-    await AsyncStorage.removeItem('user');
-    console.log('✅ Logout successful');
+    // Call your logout API endpoint here if needed
+    // await api.post('/auth/logout');
+    
+    // Clear stored auth data
+    await clearAuthData();
   } catch (error) {
-    console.error('❌ Logout failed:', error);
+    console.error('Error during logout:', error);
     throw error;
   }
 };
@@ -416,6 +418,8 @@ export const getRecurringGoals = async (params?: GetRecurringGoalsParams) => {
 export const getDailyPlans = async (params?: GetDailyPlansParams) => {
   try {
     const response = await api.get('/daily-plans', { params });
+    console.log('✅ Daily plans retrieved successfully');
+    console.log('📥 API response:', JSON.stringify(response.data, null, 2));
     return response;
   } catch (error) {
     console.error('Error fetching daily plans:', error);
@@ -459,8 +463,19 @@ export const deleteRecurringGoal = async (goalId: string) => {
 export const saveDailyPlan = async (planData: any) => {
   console.log('📝 Save daily plan attempt:', planData);
   
+  // Log checklist data specifically if it exists
+  if (planData.checklist) {
+    console.log('📋 Checklist data in saveDailyPlan:', JSON.stringify(planData.checklist, null, 2));
+  }
+  
   // Ensure dates are in the correct format
   const formattedData = { ...planData };
+  
+  // Log time fields before any transformation
+  console.log('⏰ Time fields before transformation:', {
+    block_start_time: formattedData.block_start_time,
+    block_end_time: formattedData.block_end_time
+  });
   
   // Format start_date if it's not already in YYYY-MM-DD format
   if (formattedData.start_date && !formattedData.start_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
@@ -487,6 +502,9 @@ export const saveDailyPlan = async (planData: any) => {
       console.warn('Could not parse end_date:', formattedData.end_date);
     }
   }
+  
+  // Log the final data being sent to the API
+  console.log('📤 Final data being sent to API:', JSON.stringify(formattedData, null, 2));
   
   try {
     const response = await api.post('/daily-plans', formattedData);
@@ -649,6 +667,19 @@ export const updateTaskCompletionStatus = async (taskId: string, completed: bool
     return response.data;
   } catch (error) {
     console.error('API Error updating task completion status:', error);
+    throw error;
+  }
+};
+
+// Update checklist item status for daily plans
+export const updateDailyPlanChecklistItem = async (planId: string, itemId: string, completed: boolean) => {
+  try {
+    const response = await api.put(`/daily-plans/${planId}/checklist-items/${itemId}/toggle`, {
+      completed
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating daily plan checklist item:', error);
     throw error;
   }
 };

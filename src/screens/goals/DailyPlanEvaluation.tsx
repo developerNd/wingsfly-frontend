@@ -12,15 +12,35 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
+import { Shadow } from 'react-native-shadow-2';
+import YesNoIcon from '../../components/goals/YesNoIcon';
+import TimerIcon from '../../components/goals/TimerIcon';
+import ChecklistIcon from '../../components/goals/ChecklistIcon';
+import NumericIcon from '../../components/goals/NumericIcon';
+import Svg, { Path } from 'react-native-svg';
+import Layout from '../../components/Layout';
+import ProgressIndicator from '../../components/ProgressIndicator';
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'DailyPlanEvaluation'>;
+type NavigationProp = NativeStackNavigationProp<RootStackParamList , 'DailyPlanEvaluation'>;
 type RouteType = RouteProp<RootStackParamList, 'DailyPlanEvaluation'>;
 
-interface EvaluationOption {
+type EvaluationOption = {
   id: string;
   title: string;
   description: string;
-  icon: string;
+  icon: React.FC<{ size?: number; style?: any }>;
+};
+
+interface DailyPlanSchedule {
+  id: string;
+  title: string;
+  description: string;
+  start_date: string;
+  end_date: string;
+  block_time: {
+    start_time: string;
+    end_time: string;
+  };
 }
 
 const evaluationOptions: EvaluationOption[] = [
@@ -28,25 +48,25 @@ const evaluationOptions: EvaluationOption[] = [
     id: 'yesno',
     title: 'Yes or No',
     description: 'Record whether you succeed with the activity or not',
-    icon: 'check-circle',
+    icon: YesNoIcon,
   },
   {
     id: 'timer',
     title: 'Timer',
     description: 'Establish a time value as a daily goal or limit for the habit',
-    icon: 'timer',
+    icon: TimerIcon,
   },
   {
     id: 'checklist',
     title: 'Checklist',
     description: 'Evaluate your activity based on a set of sub-items',
-    icon: 'checklist',
+    icon: ChecklistIcon,
   },
   {
     id: 'numeric',
     title: 'a Numeric Value',
     description: 'Establish a time value as a daily goal or limit for the habit',
-    icon: 'numbers',
+    icon: NumericIcon,
   },
 ];
 
@@ -54,11 +74,62 @@ const DailyPlanEvaluation = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteType>();
   const { category, taskType, gender, selectedOption } = route.params;
+  const [selected, setSelected] = useState<string | null>(null);
 
   const handleOptionSelect = (option: EvaluationOption) => {
-    console.log(taskType);
+    setSelected(option.id);
+  };
 
-    if (taskType === 'habit') {
+  const handleNext = () => {
+    const option = evaluationOptions.find((o) => o.id === selected);
+    if (!option) return;
+    if (taskType === 'recurring' || taskType === 'recurringTask') {
+      if(option.id === 'numeric'){
+        navigation.navigate('DailyPlanNumericValue', {
+          category,
+          taskType,
+          gender,
+          selectedOption,
+          evaluationType: option.id
+        });
+      }else{
+        navigation.navigate('AddRecurringGoal', {
+          category,
+          taskType: 'recurring',
+          gender,
+          goalTitle: selectedOption,
+          evaluationType: option.id
+        });
+      }
+    } else if (option.id === 'checklist') {
+      navigation.navigate('Checklist', {
+        items: [],
+        successCondition: 'all',
+        customCount: 0,
+        note: '',
+        selectedOption: selectedOption,
+        category: category,
+        taskType: taskType,
+        gender: gender,
+        evaluationType: option.id
+      });
+    } else if (option.id === 'numeric') {
+      navigation.navigate('DailyPlanNumericValue', {
+        category,
+        taskType,
+        gender,
+        selectedOption,
+        evaluationType: option.id
+      });
+    } else if (option.id === 'timer') {
+      navigation.navigate('DailyPlanTimer', {
+        category,
+        taskType,
+        gender,
+        selectedOption,
+        evaluationType: option.id,
+      });
+    } else if (taskType === 'habit') {
       navigation.navigate('DailyPlanDefine', {
         category,
         taskType,
@@ -78,64 +149,53 @@ const DailyPlanEvaluation = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-              <Icon name="arrow-back" size={24} color="black" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>How do you want to evaluate {selectedOption.toLowerCase()}?</Text>
-            <View style={{ width: 24 }} />
-          </View>
-
-          <View style={styles.optionsContainer}>
-            {evaluationOptions.map((option) => (
-              <TouchableOpacity
-                key={option.id}
-                style={styles.optionCard}
-                onPress={() => handleOptionSelect(option)}
-              >
-                <View style={styles.optionHeader}>
-                  <Text style={styles.withText}>With</Text>
-                  <Icon name="chevron-right" size={20} color="#666" />
-                  <Text style={styles.optionTitle}>{option.title}</Text>
-                  <Icon name={option.icon} size={20} color="#666" style={styles.optionIcon} />
-                </View>
+    <Layout
+      title={`How do you want to evaluate your progress ${selectedOption.toLowerCase()}?`}
+      onBackPress={() => navigation.goBack()}
+      rightButtonText="Next"
+      rightButtonDisabled={!selected}
+      onRightButtonPress={handleNext}
+    >
+      <View style={styles.content}>
+        <View style={styles.optionsContainer}>
+          {evaluationOptions.map((option) => {
+            const IconComponent = option.icon;
+            return (
+              <React.Fragment key={option.id}>
+                <Shadow
+                  distance={2}
+                  startColor="rgba(0,0,0,0.1)"
+                  endColor="rgba(0,0,0,0)"
+                  offset={[0, .5]}
+                  style={{ width: '100%' }}
+                >
+                  <TouchableOpacity
+                    style={[
+                      styles.optionCard,
+                      selected === option.id && styles.selectedCard,
+                    ]}
+                    onPress={() => handleOptionSelect(option)}
+                  >
+                    <View style={[styles.optionHeader, { width: '100%' }]}> 
+                      <Text style={styles.withText}>With</Text>
+                      <Svg width="22" height="10" viewBox="0 0 22 10" fill="none">
+                        <Path d="M1 9L5 5L1 1" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <Path d="M9 9L13 5L9 1" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <Path d="M17 9L21 5L17 1" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                      </Svg>
+                      <Text style={styles.optionTitle}>{option.title}</Text>
+                      <IconComponent size={22} style={styles.optionIcon} />
+                    </View>
+                  </TouchableOpacity>
+                </Shadow>
                 <Text style={styles.optionDescription}>{option.description}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <View style={styles.progressIndicator}>
-            <View style={styles.progressStep}>
-              <View style={[styles.stepCircle, styles.currentStep]}>
-                <Text style={styles.stepNumber}>1</Text>
-              </View>
-              <View style={styles.stepLine} />
-            </View>
-            <View style={styles.progressStep}>
-              <View style={styles.stepCircle}>
-                <Text style={styles.stepNumber}>2</Text>
-              </View>
-              <View style={styles.stepLine} />
-            </View>
-            <View style={styles.progressStep}>
-              <View style={styles.stepCircle}>
-                <Text style={styles.stepNumber}>3</Text>
-              </View>
-              <View style={styles.stepLine} />
-            </View>
-            <View style={styles.progressStep}>
-              <View style={styles.stepCircle}>
-                <Text style={styles.stepNumber}>4</Text>
-              </View>
-            </View>
-          </View>
+              </React.Fragment>
+            );
+          })}
         </View>
-      </SafeAreaView>
-    </View>
+        <ProgressIndicator currentStep={1} totalSteps={(taskType === 'task') ? 2 : 4} />
+      </View>
+    </Layout>
   );
 };
 
@@ -146,17 +206,18 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+    backgroundColor: '#fff',
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-  },
-  content: {
-    flex: 1,
-    padding: 16,
-    marginTop: 56,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+    backgroundColor: '#fff',
   },
   headerTitle: {
     fontSize: 18,
@@ -166,39 +227,50 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginHorizontal: 16,
   },
+  content: {
+    flex: 1,
+    padding: 16,
+  },
   optionsContainer: {
     flex: 1,
     gap: 16,
+    width: '100%',
   },
   optionCard: {
     backgroundColor: '#fff',
-    borderRadius: 12,
     padding: 16,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E0E0E0',
+    width: '100%',
   },
   optionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 0,
+    width: '100%'
   },
   withText: {
     fontSize: 16,
-    color: '#666',
+    color: '#000000',
+    fontWeight: '500',
+    marginRight: 8,
   },
   optionTitle: {
     fontSize: 16,
     fontWeight: '500',
     color: '#000',
     marginLeft: 8,
+    marginRight: 8,
   },
   optionIcon: {
     marginLeft: 8,
   },
   optionDescription: {
     fontSize: 14,
-    color: '#666',
-    marginTop: 4,
+    color: '#000000',
+    marginTop: 0,
+    textAlign: 'center',
   },
   progressIndicator: {
     flexDirection: 'row',
@@ -234,6 +306,25 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '500',
+  },
+  nextButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  nextButtonDisabled: {
+    opacity: 0.5,
+  },
+  nextButtonText: {
+    fontSize: 16,
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  nextButtonTextDisabled: {
+    color: '#999',
+  },
+  selectedCard: {
+    borderWidth: 2,
+    borderColor: '#007AFF',
   },
 });
 

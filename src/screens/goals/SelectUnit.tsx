@@ -77,6 +77,7 @@ const SelectUnit = () => {
         goalTitle: route.params?.goalTitle || '',
         category: route.params?.category,
         target: route.params?.target || '',
+        evaluationType: route.params?.evaluationType || undefined
       });
     }
   };

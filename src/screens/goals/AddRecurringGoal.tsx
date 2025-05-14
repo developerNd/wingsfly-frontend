@@ -13,6 +13,8 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
+import Layout from '../../components/Layout';
+import ProgressIndicator from '../../components/ProgressIndicator';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteType = RouteProp<RootStackParamList, 'AddRecurringGoal'>;
@@ -30,54 +32,41 @@ const AddRecurringGoal = () => {
         taskType: 'recurring',
         gender,
         goalTitle,
-        category: route.params?.category || ''
+        category: route.params?.category || '',
+        evaluationType: route.params?.evaluationType
       });
     }
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar 
-        barStyle="dark-content" 
-        backgroundColor="#fff"
-      />
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-              <Icon name="arrow-back" size={24} color="black" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Add Recurring Goall</Text>
-            <TouchableOpacity onPress={handleNext}>
-              <Text style={[
-                styles.headerButton,
-                !goalTitle.trim() && styles.headerButtonDisabled
-              ]}>Next</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <TextInput
-                ref={inputRef}
-                style={styles.input}
-                placeholder="Add Recurring Goal"
-                value={goalTitle}
-                onChangeText={setGoalTitle}
-                placeholderTextColor="#666"
-                autoCapitalize="sentences"
-              />
-              <Icon 
-                name="add" 
-                size={24} 
-                color="#666" 
-                style={styles.inputIcon}
-              />
-            </View>
-          </View>
+    <Layout
+      title="Add Recurring Goal"
+      onBackPress={() => navigation.goBack()}
+      rightButtonText="Next"
+      rightButtonDisabled={!goalTitle.trim()}
+      onRightButtonPress={handleNext}
+    >
+      <View style={styles.inputContainer}>
+        <View style={styles.inputWrapper}>
+          <TextInput
+            ref={inputRef}
+            style={styles.input}
+            placeholder="Add Recurring Goal"
+            value={goalTitle}
+            onChangeText={setGoalTitle}
+            placeholderTextColor="#666"
+            autoCapitalize="sentences"
+          />
+          <Icon 
+            name="add" 
+            size={24} 
+            color="#666" 
+            style={styles.inputIcon}
+          />
         </View>
-      </SafeAreaView>
-    </View>
+      </View>
+      <ProgressIndicator currentStep={2} totalSteps={5} />
+    </Layout>
   );
 };
 
@@ -128,6 +117,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     padding: 16,
+    flex: 1,
   },
   inputWrapper: {
     flexDirection: 'row',

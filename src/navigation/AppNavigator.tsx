@@ -21,9 +21,13 @@ import DailyPlanEvaluation from '../screens/goals/DailyPlanEvaluation';
 import DailyPlanDefine from '../screens/goals/DailyPlanDefine';
 import DailyPlanSchedule from '../screens/goals/DailyPlanSchedule';
 import DailyPlanFrequency from '../screens/goals/DailyPlanFrequency';
-import DailyPlanConfirmation from '../screens/goals/DailyPlanConfirmation';
+// import DailyPlanConfirmation from '../screens/goals/DailyPlanConfirmation';
 import SavedGoalsScreen from '../screens/goals/SavedGoalsScreen';
 import DailyPlanDefineTask from '../screens/goals/DailyPlanDefineTask';
+import Checklist from '../screens/goals/Checklist';
+import DailyPlanNumericValue from '../screens/goals/DailyPlanNumericValue';
+import DailyPlanTimer from '../screens/goals/DailyPlanTimer';
+import PomodoroTimer from '../screens/goals/PomodoroTimer';
 
 export type Goal = {
   id: string;
@@ -45,11 +49,14 @@ export type RootStackParamList = {
     category?: string;
     taskType: 'recurring';
     goalTitle?: string;
+    isFromAdd?: boolean;
+    evaluationType?: string;
   };
-  DailyPlan: { 
-    // category: string; 
+  DailyPlan: {
     gender: 'male' | 'female';
     taskType: 'daily';
+    refreshTasks?: boolean;
+    completedTaskId?: string;
   };
   SelectCategory: { 
     taskType: 'long-term' | 'recurring' | 'daily' | 'custom'; 
@@ -78,6 +85,7 @@ export type RootStackParamList = {
       note: string;
     };
     linkedGoal?: Goal;
+    evaluationType?: string;
   };
   CustomGoal: { 
     category: string; 
@@ -112,12 +120,37 @@ export type RootStackParamList = {
       customCount?: number;
       note: string;
     };
+    blockTime?: {
+      startTime: {
+        hour: number;
+        minute: number;
+        period: 'AM' | 'PM';
+      },
+      endTime: {
+        hour: number;
+        minute: number;
+        period: 'AM' | 'PM';
+      };
+    };
   };
   SelectUnit: {
     gender?: 'male' | 'female';
     goalTitle?: string;
     category?: string;
     target?: string;
+    evaluationType?: string;
+    blockTime?: {
+      startTime: {
+        hour: number;
+        minute: number;
+        period: 'AM' | 'PM';
+      },
+      endTime: {
+        hour: number;
+        minute: number;
+        period: 'AM' | 'PM';
+      };
+    };
   };
   SavedGoals: undefined;
   DailyPlanEvaluation: {
@@ -132,6 +165,13 @@ export type RootStackParamList = {
     gender: 'male' | 'female';
     evaluationType: string;
     selectedOption: string;
+    checklist?: {
+      items: Array<{ id: string; text: string; completed: boolean }>;
+      successCondition: 'all' | 'custom';
+      customCount?: number;
+      note: string;
+    };
+    checklist_items?: Array<{ id: string; text: string; completed: boolean }>;
   };
   DailyPlanSchedule: {
     category: string;
@@ -144,6 +184,10 @@ export type RootStackParamList = {
     frequency: 'every-day' | 'specific-days-week' | 'specific-days-month' | 'specific-days-year' | 'some-days-period' | 'repeat';
     selectedDays?: string[];
     isFlexible: boolean;
+    checklist_items?: Array<{ id: string; text: string; completed: boolean }>;
+    numeric_value: number;
+    numeric_condition: string;
+    numeric_unit: string;
   };
   DailyPlanFrequency: {
     category: string;
@@ -153,6 +197,10 @@ export type RootStackParamList = {
     habit: string;
     description: string;
     selectedOption: string;
+    checklist_items?: Array<{ id: string; text: string; completed: boolean }>;
+    numeric_value: number;
+    numeric_condition: string;
+    numeric_unit: string;
   };
   DailyPlanConfirmation: {
     category: string;
@@ -177,6 +225,60 @@ export type RootStackParamList = {
     gender: 'male' | 'female';
     evaluationType: string;
     selectedOption: string;
+    checklist?: {
+      items: Array<{ id: string; text: string; completed: boolean }>;
+      successCondition: 'all' | 'custom';
+      customCount?: number;
+      note: string;
+    };
+  };
+  Checklist: {
+    items: Array<{
+      id: string;
+      text: string;
+      completed: boolean;
+    }>;
+    successCondition: 'all' | 'custom';
+    customCount: number;
+    note: string;
+    selectedOption?: string;
+    category?: string;
+    taskType?: string;
+    gender?: 'male' | 'female';
+    evaluationType?: string;
+    goalTitle?: string;
+    existingChecklist?: {
+      items: Array<{ id: string; text: string; completed: boolean }>;
+      successCondition: 'all' | 'custom';
+      customCount?: number;
+      note: string;
+    };
+  };
+  DailyPlanNumericValue: {
+    category: string;
+    taskType: string;
+    gender: 'male' | 'female';
+    selectedOption: string;
+    habit?: string;
+    description?: string;
+    evaluationType?: string;
+  };
+  DailyPlanTimer: {
+    category: string;
+    taskType: string;
+    gender: 'male' | 'female';
+    selectedOption: string;
+    timeValue?: string;
+    evaluationType?: string;
+  };
+  PomodoroTimer: {
+    duration: number;
+    title: string;
+    itemId: string;
+    taskId: string;
+    taskType: string;
+    checklist: boolean;
+    onComplete: () => void;
   };
 };
 
@@ -211,10 +313,20 @@ const AppNavigator = () => {
         <Stack.Screen name="SavedGoals" component={SavedGoalsScreen} />
         <Stack.Screen name="DailyPlanEvaluation" component={DailyPlanEvaluation} />
         <Stack.Screen name="DailyPlanDefine" component={DailyPlanDefine} />
+        <Stack.Screen name="DailyPlanNumericValue" component={DailyPlanNumericValue} />
         <Stack.Screen name="DailyPlanSchedule" component={DailyPlanSchedule} />
         <Stack.Screen name="DailyPlanFrequency" component={DailyPlanFrequency} />
-        <Stack.Screen name="DailyPlanConfirmation" component={DailyPlanConfirmation} />
+        {/* <Stack.Screen name="DailyPlanConfirmation" component={DailyPlanConfirmation} /> */}
         <Stack.Screen name="DailyPlanDefineTask" component={DailyPlanDefineTask} />
+        <Stack.Screen
+          name="Checklist"
+          component={Checklist}
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen name="DailyPlanTimer" component={DailyPlanTimer} />
+        <Stack.Screen name="PomodoroTimer" component={PomodoroTimer} />
       </Stack.Navigator>
     </NavigationContainer>
   );

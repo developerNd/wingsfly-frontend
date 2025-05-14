@@ -12,7 +12,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
-import { register } from '../../services/api';
+import { register, getStoredGender } from '../../services/api';
 
 type SignupScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -59,7 +59,13 @@ const Signup = () => {
       console.log('🔄 Starting signup process');
       await register(name, email, password, 'male');
       console.log('✅ Signup process completed');
-      navigation.navigate('GenderSelect');
+      
+      // Get the user's gender from storage
+      const gender = await getStoredGender();
+      console.log('✅ Retrieved user gender:', gender);
+      
+      // Navigate to Home screen with the user's gender
+      navigation.navigate('Home', { gender: gender || 'male' });
     } catch (error: any) {
       console.error('❌ Signup process failed:', error);
       setError(error.userMessage || 'An error occurred during signup. Please try again.');
